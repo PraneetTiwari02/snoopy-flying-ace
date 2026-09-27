@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Snoopy: The Flying Ace</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+  <style>
+    .comic-font {
+      font-family: 'Fredoka', cursive, sans-serif;
+      letter-spacing: 0.03em;
+    }
+    .hand-font {
+      font-family: 'Patrick Hand', cursive, sans-serif;
+    }
+    .comic-shadow {
+      box-shadow: 4px 4px 0px #18181b;
+    }
+    .comic-shadow-lg {
+      box-shadow: 6px 6px 0px #18181b;
+    }
+    .comic-btn {
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+      box-shadow: 3px 3px 0px #18181b;
+    }
+    .comic-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0px #18181b;
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-center w-screen h-screen bg-[#f3edd9] p-1 sm:p-3 text-slate-900 select-none overflow-hidden">
+
+  <!-- Main Game Cabinet Frame -->
+  <div class="relative w-full max-w-5xl h-full max-h-[96vh] flex flex-col bg-[#fffdfa] border-4 border-black rounded-2xl comic-shadow-lg overflow-hidden">
+    
+    <!-- Top HUD Navigation Bar -->
+    <header class="w-full flex items-center justify-between px-3 py-2 bg-[#fffae8] border-b-4 border-black z-20 shrink-0">
+      <div class="flex items-center space-x-2 sm:space-x-4">
+        <div class="flex items-center gap-1.5 text-xs sm:text-base font-bold">
+          <span class="comic-font text-red-600">DISTANCE:</span>
+          <span id="scoreDisplay" class="comic-font text-gray-900 text-sm sm:text-lg">0m</span>
+        </div>
+        <div class="flex items-center gap-1 text-xs sm:text-sm bg-amber-100 border-2 border-amber-800 px-2.5 py-0.5 rounded-full font-bold text-amber-900 shadow-sm">
+          <span>🍺</span>
+          <span id="rootBeerCount">0</span>
+        </div>
+      </div>
+
+      <div class="comic-font text-sm sm:text-xl tracking-wider text-red-700 hidden md:block">
+        SNOOPY: THE FLYING ACE
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <div class="text-xs sm:text-sm font-bold text-gray-700 hidden sm:block">
+          BEST: <span id="highScoreDisplay" class="comic-font text-black">0m</span>
+        </div>
+        <button id="pauseToggleBtn" type="button" class="comic-btn px-3 py-1.5 bg-yellow-300 hover:bg-yellow-400 border-2 border-black rounded-xl text-xs sm:text-sm font-black flex items-center gap-1 cursor-pointer" title="Pause Game (P or Esc)">
+          <span id="pauseIcon">⏸️</span>
+          <span class="comic-font hidden sm:inline">PAUSE</span>
+        </button>
+        <button id="soundToggleBtn" type="button" class="comic-btn px-2.5 py-1.5 bg-white hover:bg-gray-100 border-2 border-black rounded-xl text-xs sm:text-sm cursor-pointer font-bold" title="Toggle Sound">
+          🔊
+        </button>
+      </div>
+    </header>
+
+    <!-- Canvas Container -->
+    <div class="relative flex-1 w-full h-full min-h-0 overflow-hidden bg-sky-200">
+      <canvas id="gameCanvas" class="w-full h-full block cursor-pointer touch-none"></canvas>
+
+      <!-- Root Beer Turbo Indicator Bar -->
+      <div id="boostBarContainer" class="hidden absolute top-3 left-1/2 -translate-x-1/2 bg-yellow-300 border-2 border-black rounded-full px-3 py-1 flex items-center gap-2 shadow z-20 pointer-events-none">
+        <span class="text-xs sm:text-sm font-bold tracking-wider comic-font text-amber-950">ROOT BEER TURBO!</span>
+        <div class="w-20 sm:w-28 h-3 bg-white border border-black rounded-full overflow-hidden">
+          <div id="boostProgress" class="h-full bg-red-500 w-full transition-all"></div>
+        </div>
+      </div>
+
+      <div id="pauseScreen" class="hidden absolute inset-0 bg-black/60 backdrop-blur-xs flex flex-col items-center justify-center p-4 text-center z-30">
+        <div class="bg-[#fef9c3] border-4 border-black rounded-2xl p-6 max-w-sm w-full comic-shadow text-center">
+          <div class="text-5xl mb-2">💤</div>
+          <h2 class="text-2xl sm:text-3xl comic-font text-amber-900 mb-1">TACTICAL NAP!</h2>
+          <p class="text-sm sm:text-base text-amber-800 mb-4 hand-font font-bold text-lg">Snoopy is resting atop the doghouse.</p>
+
+          <div class="bg-white border-2 border-black rounded-xl p-3 mb-4 space-y-1">
+            <div class="flex justify-between text-sm sm:text-base font-bold">
+              <span class="text-gray-700">Distance Traveled:</span>
+              <strong id="pauseScore" class="comic-font text-gray-900">0m</strong>
+            </div>
+            <div class="flex justify-between text-sm sm:text-base font-bold">
+              <span class="text-gray-700">Root Beers:</span>
+              <strong id="pauseBeer" class="comic-font text-amber-800">0</strong>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <button id="resumeBtn" type="button" class="comic-btn w-full py-2.5 bg-green-500 hover:bg-green-600 text-white comic-font text-lg rounded-xl border-2 border-black tracking-wide shadow cursor-pointer">
+              RESUME FLIGHT ▶️
+            </button>
+            <button id="pauseRestartBtn" type="button" class="comic-btn w-full py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 comic-font text-sm rounded-xl border-2 border-black tracking-wide cursor-pointer">
+              RESTART PATROL 🔄
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="startScreen" class="absolute inset-0 bg-[#eaf4fb]/95 backdrop-blur-xs flex flex-col items-center justify-center p-4 text-center z-30">
+        <div class="bg-white border-4 border-black rounded-2xl p-5 sm:p-7 max-w-md w-full comic-shadow">
+          <div class="inline-block bg-red-600 text-white px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider mb-2">Curse you, Red Baron!</div>
+          <h1 class="text-3xl sm:text-4xl comic-font text-gray-900 mb-1">THE FLYING ACE</h1>
+          <p class="text-base sm:text-lg text-gray-600 hand-font font-bold mb-4">Pilot Snoopy’s sopwith doghouse over France!</p>
+          
+          <div class="text-xs sm:text-sm text-left bg-[#fbf6e9] border-2 border-dashed border-[#bfa268] p-3 rounded-xl mb-5 space-y-1.5 font-medium">
+            <p>✈️ <b class="text-black">Controls:</b> Tap screen, Click, or press <kbd class="px-1.5 py-0.5 bg-gray-200 border border-gray-400 rounded text-xs font-mono font-bold">Space</kbd> / <kbd class="px-1.5 py-0.5 bg-gray-200 border border-gray-400 rounded text-xs font-mono font-bold">↑</kbd> to fly up.</p>
+            <p>⏸️ <b class="text-black">Pause:</b> Press <kbd class="px-1.5 py-0.5 bg-gray-200 border border-gray-400 rounded text-xs font-mono font-bold">P</kbd>, <kbd class="px-1.5 py-0.5 bg-gray-200 border border-gray-400 rounded text-xs font-mono font-bold">Esc</kbd>, or tap the <span class="bg-yellow-200 border border-black px-1 rounded font-bold">⏸️ PAUSE</span> button.</p>
+            <p>☁️ <b class="text-black">Dodge:</b> Zeppelin cruisers, storm clouds, and anti-aircraft flak.</p>
+            <p>🍺 <b class="text-black">Collect:</b> Root Beer for invincibility turbo & Woodstock for +150 bonus meters!</p>
+          </div>
+
+          <button id="startBtn" type="button" class="comic-btn w-full py-3.5 bg-red-500 hover:bg-red-600 text-white comic-font text-xl rounded-xl border-2 border-black tracking-wide cursor-pointer">
+            TAKE TO THE SKIES! 🚀
+          </button>
+        </div>
+      </div>
+
+      <div id="gameOverScreen" class="hidden absolute inset-0 bg-black/60 backdrop-blur-xs flex flex-col items-center justify-center p-4 text-center z-30">
+        <div class="bg-white border-4 border-black rounded-2xl p-6 max-w-sm w-full comic-shadow">
+          <div class="text-5xl mb-1">💥</div>
+          <h2 class="text-2xl sm:text-3xl comic-font text-red-600 mb-1">SHOT DOWN!</h2>
+          <p class="text-sm sm:text-base text-gray-600 hand-font font-bold mb-4">"Curse you, Red Baron!"</p>
+
+          <div class="bg-amber-50 border-2 border-black rounded-xl p-3 mb-4 space-y-1.5 font-bold">
+            <div class="flex justify-between text-sm sm:text-base">
+              <span class="text-gray-700">Distance Flown:</span>
+              <strong id="finalScore" class="comic-font text-gray-900">0m</strong>
+            </div>
+            <div class="flex justify-between text-sm sm:text-base">
+              <span class="text-gray-700">Root Beers Quaffed:</span>
+              <strong id="finalBeer" class="comic-font text-amber-800">0</strong>
+            </div>
+            <div class="flex justify-between text-sm sm:text-base border-t border-dashed border-gray-300 pt-1.5">
+              <span class="text-gray-700">Personal Best:</span>
+              <strong id="finalHigh" class="comic-font text-red-600">0m</strong>
+            </div>
+          </div>
+
+          <button id="restartBtn" type="button" class="comic-btn w-full py-3 bg-green-500 hover:bg-green-600 text-white comic-font text-lg rounded-xl border-2 border-black tracking-wide cursor-pointer">
+            FLY AGAIN 🚀
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Controls Helper -->
+    <footer class="w-full text-center py-1.5 bg-[#fcf9ee] border-t-2 border-black text-xs text-gray-600 font-bold shrink-0">
+      100% Offline Game • Tap or Space to Ascend • Press P to Pause
+    </footer>
+  </div>
+
+  <script>
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) {
+            this.ctx = new AudioContextClass();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playFlap() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(140, now);
+          osc.frequency.exponentialRampToValueAtTime(320, now + 0.11);
+
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.11);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.12);
+        } catch (e) {}
+      }
+
+      playBeer() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const notes = [392, 523.25, 659.25, 783.99];
+          notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+
+            gain.gain.setValueAtTime(0.22, now + idx * 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.05 + 0.16);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start(now + idx * 0.05);
+            osc.stop(now + idx * 0.05 + 0.18);
+          });
+        } catch (e) {}
+      }
+
+      playWoodstock() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const chirps = [1400, 1850, 1600, 2200];
+          chirps.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.045);
+
+            gain.gain.setValueAtTime(0.16, now + idx * 0.045);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.045 + 0.07);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start(now + idx * 0.045);
+            osc.stop(now + idx * 0.045 + 0.08);
+          });
+        } catch (e) {}
+      }
+
+      playCrash() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const bufferSize = this.ctx.sampleRate * 0.4;
+          const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+          }
+
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = buffer;
+
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(700, now);
+          filter.frequency.linearRampToValueAtTime(60, now + 0.38);
+
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(0.35, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.38);
+
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          noise.start(now);
+          noise.stop(now + 0.4);
+        } catch (e) {}
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const highScoreDisplay = document.getElementById('highScoreDisplay');
+    const rootBeerCountDisplay = document.getElementById('rootBeerCount');
+    const startScreen = document.getElementById('startScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const pauseScreen = document.getElementById('pauseScreen');
+    const pauseScore = document.getElementById('pauseScore');
+    const pauseBeer = document.getElementById('pauseBeer');
+    const pauseToggleBtn = document.getElementById('pauseToggleBtn');
+    const pauseIcon = document.getElementById('pauseIcon');
+    const resumeBtn = document.getElementById('resumeBtn');
+    const pauseRestartBtn = document.getElementById('pauseRestartBtn');
+    const finalScore = document.getElementById('finalScore');
+    const finalBeer = document.getElementById('finalBeer');
+    const finalHigh = document.getElementById('finalHigh');
+    const startBtn = document.getElementById('startBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const boostBarContainer = document.getElementById('boostBarContainer');
+    const boostProgress = document.getElementById('boostProgress');
+
+    let logicalWidth = 800;
+    let logicalHeight = 600;
+    let currentDpr = window.devicePixelRatio || 1;
+
+    function resizeCanvas() {
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      const rect = parent.getBoundingClientRect();
+      currentDpr = window.devicePixelRatio || 1;
+      
+      logicalWidth = Math.max(320, rect.width);
+      logicalHeight = Math.max(240, rect.height);
+      
+      canvas.width = Math.round(logicalWidth * currentDpr);
+      canvas.height = Math.round(logicalHeight * currentDpr);
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    // Persistence
+    let highScore = parseInt(localStorage.getItem('snoopy_flying_ace_hi') || '0', 10);
+    highScoreDisplay.textContent = highScore + 'm';
+
+    let gameState = 'START'; // 'START' | 'PLAYING' | 'PAUSED' | 'GAMEOVER'
+    let distance = 0;
+    let rootBeerCount = 0;
+    let boostTimeRemaining = 0;
+    const BOOST_DURATION = 5;
+    let lastTime = 0;
+
+    function togglePause() {
+      if (gameState === 'PLAYING') {
+        gameState = 'PAUSED';
+        if (pauseScore) pauseScore.textContent = Math.floor(distance) + 'm';
+        if (pauseBeer) pauseBeer.textContent = rootBeerCount;
+        if (pauseScreen) pauseScreen.classList.remove('hidden');
+        if (pauseIcon) pauseIcon.textContent = '▶️';
+        if (sound.ctx && sound.ctx.state === 'running') {
+          sound.ctx.suspend();
+        }
+      } else if (gameState === 'PAUSED') {
+        resumeGame();
+      }
+    }
+
+    function resumeGame() {
+      if (gameState !== 'PAUSED') return;
+      gameState = 'PLAYING';
+      if (pauseScreen) pauseScreen.classList.add('hidden');
+      if (pauseIcon) pauseIcon.textContent = '⏸️';
+      lastTime = performance.now();
+      if (sound.ctx && sound.ctx.state === 'suspended') {
+        sound.ctx.resume();
+      }
+    }
+
+    const player = {
+      x: 120,
+      y: 250,
+      vy: 0,
+      gravity: 920,
+      jumpImpulse: -340,
+      rotation: 0,
+      scarfTimer: 0,
+      propellerAngle: 0,
+      smokeParticles: [],
+
+      reset(h) {
+        this.x = Math.max(90, logicalWidth * 0.18);
+        this.y = h * 0.45;
+        this.vy = 0;
+        this.rotation = 0;
+        this.smokeParticles = [];
+      },
+
+      flap() {
+        this.vy = this.jumpImpulse;
+        sound.playFlap();
+
+        // Spawn smoke puffs
+        for (let i = 0; i < 3; i++) {
+          this.smokeParticles.push({
+            x: this.x - 26,
+            y: this.y + 10 + (Math.random() * 8 - 4),
+            radius: 5 + Math.random() * 4,
+            alpha: 0.85,
+            vx: -80 - Math.random() * 50,
+            vy: (Math.random() - 0.5) * 35
+          });
+        }
+      },
+
+      update(dt) {
+        this.vy += this.gravity * dt;
+        this.y += this.vy * dt;
+
+        const targetRot = Math.max(-0.45, Math.min(0.55, this.vy / 650));
+        this.rotation += (targetRot - this.rotation) * 8 * dt;
+
+        this.scarfTimer += dt * 14;
+        this.propellerAngle += dt * 35;
+
+        // Boundaries
+        if (this.y < 25) {
+          this.y = 25;
+          this.vy = 0;
+        }
+        if (this.y > logicalHeight - 38) {
+          triggerGameOver();
+        }
+
+        // Smoke particles
+        for (let i = this.smokeParticles.length - 1; i >= 0; i--) {
+          const p = this.smokeParticles[i];
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.radius += dt * 16;
+          p.alpha -= dt * 1.6;
+          if (p.alpha <= 0) {
+            this.smokeParticles.splice(i, 1);
+          }
+        }
+      }
+    };
+
+    function drawSnoopy(x, y, rotation, scarfPhase, isBoosted) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rotation);
+
+      // Turbo Golden Aura
+      if (isBoosted) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(4, 2, 44, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 215, 0, ${0.35 + 0.2 * Math.sin(Date.now() / 80)})`;
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#f59e0b';
+        ctx.setLineDash([6, 4]);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 1. Doghouse Body (The Sopwith Camel)
+      ctx.fillStyle = '#dc2626';
+      ctx.strokeStyle = '#18181b';
+      ctx.lineWidth = 2.5;
+
+      ctx.beginPath();
+      ctx.moveTo(-32, 2);
+      ctx.lineTo(2, -18);
+      ctx.lineTo(34, 2);
+      ctx.lineTo(30, 26);
+      ctx.lineTo(-30, 26);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Doghouse Door opening
+      ctx.fillStyle = '#27272a';
+      ctx.beginPath();
+      ctx.arc(4, 26, 12, Math.PI, 0, false);
+      ctx.fill();
+
+      // Planks
+      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-24, 10);
+      ctx.lineTo(26, 10);
+      ctx.moveTo(-26, 18);
+      ctx.lineTo(28, 18);
+      ctx.stroke();
+
+      // Propeller Hub
+      ctx.fillStyle = '#4b5563';
+      ctx.beginPath();
+      ctx.arc(33, 4, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Spinning propeller
+      ctx.save();
+      ctx.translate(33, 4);
+      ctx.rotate(player.propellerAngle);
+      ctx.fillStyle = 'rgba(240, 240, 240, 0.75)';
+      ctx.fillRect(-2, -22, 4, 44);
+      ctx.strokeStyle = '#18181b';
+      ctx.lineWidth = 1.2;
+      ctx.strokeRect(-2, -22, 4, 44);
+      ctx.restore();
+
+      // 2. Trailing Red Scarf
+      const wave1 = Math.sin(scarfPhase) * 6;
+      const wave2 = Math.cos(scarfPhase + 1.2) * 8;
+      ctx.beginPath();
+      ctx.moveTo(-8, -21);
+      ctx.bezierCurveTo(-20, -21 + wave1, -36, -26 + wave2, -50, -22 + wave1);
+      ctx.lineTo(-48, -14 + wave1);
+      ctx.bezierCurveTo(-34, -18 + wave2, -18, -16 + wave1, -6, -17);
+      ctx.closePath();
+      ctx.fillStyle = '#ef4444';
+      ctx.fill();
+      ctx.strokeStyle = '#18181b';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // 3. Snoopy on Roof
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#18181b';
+      ctx.lineWidth = 2.5;
+
+      // Body
+      ctx.beginPath();
+      ctx.ellipse(-2, -14, 12, 11, 0.1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Spot on back
+      ctx.fillStyle = '#18181b';
+      ctx.beginPath();
+      ctx.arc(-8, -15, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Head
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.ellipse(8, -26, 12, 10, -0.15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Snout
+      ctx.beginPath();
+      ctx.ellipse(18, -25, 9, 7.5, -0.05, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Black Nose
+      ctx.fillStyle = '#18181b';
+      ctx.beginPath();
+      ctx.arc(26, -26.5, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Aviator Leather Helmet Cap
+      ctx.fillStyle = '#78350f';
+      ctx.beginPath();
+      ctx.arc(6, -28, 11.5, Math.PI * 0.8, Math.PI * 2.1);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Helmet chin strap
+      ctx.strokeStyle = '#78350f';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(3, -20);
+      ctx.lineTo(8, -17);
+      ctx.stroke();
+
+      // Aviator Goggles
+      ctx.fillStyle = '#38bdf8';
+      ctx.strokeStyle = '#18181b';
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.arc(8, -28, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(17, -28, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Goggle strap band
+      ctx.strokeStyle = '#18181b';
+      ctx.beginPath();
+      ctx.moveTo(3, -28);
+      ctx.lineTo(-2, -26);
+      ctx.stroke();
+
+      // Ear flap
+      ctx.fillStyle = '#5c2b09';
+      ctx.beginPath();
+      ctx.ellipse(-2, -24, 4.5, 8, 0.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Happy smile
+      ctx.strokeStyle = '#18181b';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.arc(14, -20, 6, 0.2, Math.PI * 0.7);
+      ctx.stroke();
+
+      // Paws
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(10, -6, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    const clouds = [];
+    for (let i = 0; i < 9; i++) {
+      clouds.push({
+        x: Math.random() * 1000,
+        y: 20 + Math.random() * 320,
+        speed: 25 + Math.random() * 35,
+        scale: 0.6 + Math.random() * 0.8,
+        alpha: 0.45 + Math.random() * 0.4
+      });
+    }
+
+    function updateAndDrawBackground(dt) {
+      // Vintage sky gradient
+      const grad = ctx.createLinearGradient(0, 0, 0, logicalHeight);
+      grad.addColorStop(0, '#8ecae6');
+      grad.addColorStop(0.65, '#c8e7f5');
+      grad.addColorStop(1, '#e3d2a9');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, logicalWidth, logicalHeight);
+
+      // Rolling French countryside horizon
+      ctx.fillStyle = '#b7cf8e';
+      ctx.beginPath();
+      ctx.moveTo(0, logicalHeight - 35);
+      const step = 60;
+      for (let x = 0; x <= logicalWidth + step; x += step) {
+        const hillY = logicalHeight - 35 + Math.sin((x + distance * 0.3) * 0.008) * 14;
+        ctx.lineTo(x, hillY);
+      }
+      ctx.lineTo(logicalWidth, logicalHeight);
+      ctx.lineTo(0, logicalHeight);
+      ctx.closePath();
+      ctx.fill();
+
+      // Countryside hedges
+      ctx.fillStyle = '#89a859';
+      for (let tx = 0; tx < logicalWidth + 90; tx += 90) {
+        const treeX = ((tx - (distance * 0.6)) % (logicalWidth + 90) + (logicalWidth + 90)) % (logicalWidth + 90);
+        ctx.beginPath();
+        ctx.arc(treeX, logicalHeight - 20, 18, Math.PI, 0);
+        ctx.fill();
+      }
+
+      // Parallax Clouds
+      clouds.forEach(c => {
+        c.x -= c.speed * dt;
+        if (c.x < -140) {
+          c.x = logicalWidth + 80;
+          c.y = 20 + Math.random() * (logicalHeight * 0.55);
+        }
+
+        ctx.save();
+        ctx.translate(c.x, c.y);
+        ctx.scale(c.scale, c.scale);
+        ctx.fillStyle = `rgba(255, 255, 255, ${c.alpha})`;
+        ctx.strokeStyle = `rgba(24, 24, 27, ${c.alpha * 0.6})`;
+        ctx.lineWidth = 2;
+
+        ctx.beginPath();
+        ctx.arc(0, 0, 26, 0, Math.PI * 2);
+        ctx.arc(24, -10, 32, 0, Math.PI * 2);
+        ctx.arc(58, 2, 28, 0, Math.PI * 2);
+        ctx.arc(36, 12, 24, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
+    const obstacles = [];
+    const collectibles = [];
+    let obstacleTimer = 1.0;
+    let collectibleTimer = 3.2;
+
+    function spawnObstacle() {
+      const types = ['ZEPPELIN', 'STORM_CLOUD', 'FLAK'];
+      const chosen = types[Math.floor(Math.random() * types.length)];
+      const yPos = 60 + Math.random() * (logicalHeight - 180);
+
+      if (chosen === 'ZEPPELIN') {
+        obstacles.push({
+          type: 'ZEPPELIN',
+          x: logicalWidth + 80,
+          y: yPos,
+          width: 95,
+          height: 48,
+          speed: 160 + Math.min(distance * 0.08, 120),
+          propellerAngle: 0
+        });
+      } else if (chosen === 'STORM_CLOUD') {
+        obstacles.push({
+          type: 'STORM_CLOUD',
+          x: logicalWidth + 80,
+          y: yPos,
+          width: 80,
+          height: 60,
+          speed: 130 + Math.min(distance * 0.06, 90),
+          lightningTick: 0
+        });
+      } else if (chosen === 'FLAK') {
+        obstacles.push({
+          type: 'FLAK',
+          x: logicalWidth + 60,
+          y: yPos,
+          width: 50,
+          height: 50,
+          speed: 120 + Math.min(distance * 0.05, 80)
+        });
+      }
+    }
+
+    function spawnCollectible() {
+      const isWoodstock = Math.random() < 0.38;
+      collectibles.push({
+        type: isWoodstock ? 'WOODSTOCK' : 'ROOT_BEER',
+        x: logicalWidth + 40,
+        y: 80 + Math.random() * (logicalHeight - 200),
+        bobPhase: Math.random() * Math.PI * 2,
+        speed: 120
+      });
+    }
+
+    function drawZeppelin(obs) {
+      ctx.save();
+      ctx.translate(obs.x, obs.y);
+
+      // Main Hull
+      ctx.fillStyle = '#65735b';
+      ctx.strokeStyle = '#18181b';
+      ctx.lineWidth = 2.5;
+
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 48, 22, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Tail fins
+      ctx.fillStyle = '#485440';
+      ctx.beginPath();
+      ctx.moveTo(35, 0);
+      ctx.lineTo(50, -18);
+      ctx.lineTo(40, 0);
+      ctx.lineTo(50, 18);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Gondola
+      ctx.fillStyle = '#3f3f46';
+      ctx.fillRect(-16, 18, 30, 9);
+      ctx.strokeRect(-16, 18, 30, 9);
+
+      // Black Cross decal
+      ctx.fillStyle = '#18181b';
+      ctx.fillRect(-6, -8, 12, 16);
+      ctx.fillRect(-12, -3, 24, 6);
+
+      // Tail Propeller
+      ctx.save();
+      ctx.translate(50, 0);
+      ctx.rotate(obs.propellerAngle || 0);
+      ctx.fillStyle = '#18181b';
+      ctx.fillRect(-1.5, -12, 3, 24);
+      ctx.restore();
+
+      ctx.restore();
+    }
+
+    function drawStormCloud(obs) {
+      ctx.save();
+      ctx.translate(obs.x, obs.y);
+
+      ctx.fillStyle = '#4b5563';
+      ctx.strokeStyle = '#111827';
+      ctx.lineWidth = 2.5;
+
+      ctx.beginPath();
+      ctx.arc(-18, 0, 22, 0, Math.PI * 2);
+      ctx.arc(8, -10, 26, 0, Math.PI * 2);
+      ctx.arc(28, 4, 19, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      if (Math.sin(obs.lightningTick * 8) > 0.6) {
+        ctx.fillStyle = '#fef08a';
+        ctx.strokeStyle = '#ca8a04';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(0, 18);
+        ctx.lineTo(-6, 32);
+        ctx.lineTo(2, 32);
+        ctx.lineTo(-4, 46);
+        ctx.lineTo(8, 28);
+        ctx.lineTo(1, 28);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawFlak(obs) {
+      ctx.save();
+      ctx.translate(obs.x, obs.y);
+
+      ctx.fillStyle = 'rgba(39, 39, 42, 0.88)';
+      ctx.strokeStyle = '#09090b';
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      const points = 8;
+      for (let i = 0; i < points * 2; i++) {
+        const radius = i % 2 === 0 ? 22 : 14;
+        const angle = (i * Math.PI) / points;
+        const px = Math.cos(angle) * radius;
+        const py = Math.sin(angle) * radius;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(0, 0, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawRootBeer(col) {
+      ctx.save();
+      ctx.translate(col.x, col.y + Math.sin(col.bobPhase) * 6);
+
+      ctx.fillStyle = '#b45309';
+      ctx.strokeStyle = '#18181b';
+      ctx.lineWidth = 2;
+
+      ctx.fillRect(-10, -10, 20, 22);
+      ctx.strokeRect(-10, -10, 20, 22);
+
+      // Foam
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(-7, -11, 5, 0, Math.PI * 2);
+      ctx.arc(0, -12, 6, 0, Math.PI * 2);
+      ctx.arc(7, -11, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Handle
+      ctx.strokeStyle = '#18181b';
+      ctx.beginPath();
+      ctx.arc(10, 1, 6, -Math.PI / 2, Math.PI / 2);
+      ctx.stroke();
+
+      // Sparkle
+      ctx.fillStyle = '#fef08a';
+      ctx.beginPath();
+      ctx.arc(-4, -2, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawWoodstock(col) {
+      ctx.save();
+      ctx.translate(col.x, col.y + Math.sin(col.bobPhase) * 6);
+
+      // Parachute Canopy
+      ctx.fillStyle = '#ef4444';
+      ctx.strokeStyle = '#18181b';
+      ctx.lineWidth = 1.8;
+
+      ctx.beginPath();
+      ctx.arc(0, -20, 16, Math.PI, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Strings
+      ctx.strokeStyle = '#52525b';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-14, -20);
+      ctx.lineTo(0, -4);
+      ctx.moveTo(14, -20);
+      ctx.lineTo(0, -4);
+      ctx.stroke();
+
+      // Woodstock
+      ctx.fillStyle = '#eab308';
+      ctx.strokeStyle = '#18181b';
+      ctx.lineWidth = 1.6;
+
+      ctx.beginPath();
+      ctx.moveTo(-2, -9);
+      ctx.lineTo(-4, -14);
+      ctx.lineTo(0, -10);
+      ctx.lineTo(2, -14);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.ellipse(0, -3, 6, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#ea580c';
+      ctx.beginPath();
+      ctx.moveTo(5, -4);
+      ctx.lineTo(10, -3);
+      ctx.lineTo(5, -1);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#18181b';
+      ctx.beginPath();
+      ctx.arc(2, -4, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function checkCircleCollision(x1, y1, r1, x2, y2, r2) {
+      const dx = x1 - x2;
+      const dy = y1 - y2;
+      return (dx * dx + dy * dy) < (r1 + r2) * (r1 + r2);
+    }
+
+    function triggerGameOver() {
+      if (gameState === 'GAMEOVER') return;
+      gameState = 'GAMEOVER';
+      sound.playCrash();
+
+      if (distance > highScore) {
+        highScore = Math.floor(distance);
+        localStorage.setItem('snoopy_flying_ace_hi', highScore);
+        highScoreDisplay.textContent = highScore + 'm';
+      }
+
+      finalScore.textContent = Math.floor(distance) + 'm';
+      finalBeer.textContent = rootBeerCount;
+      finalHigh.textContent = highScore + 'm';
+
+      boostBarContainer.classList.add('hidden');
+      gameOverScreen.classList.remove('hidden');
+    }
+
+    function gameLoop(timestamp) {
+      if (!lastTime) lastTime = timestamp;
+      const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
+      lastTime = timestamp;
+
+      // Complete hardware canvas buffer wipe (eliminates any trailing or ghosting)
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.setTransform(currentDpr, 0, 0, currentDpr, 0, 0);
+
+      if (gameState === 'PAUSED') {
+        updateAndDrawBackground(0);
+        player.smokeParticles.forEach(p => {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(240, 240, 240, ${p.alpha})`;
+          ctx.fill();
+        });
+        obstacles.forEach(obs => {
+          if (obs.type === 'ZEPPELIN') drawZeppelin(obs);
+          else if (obs.type === 'STORM_CLOUD') drawStormCloud(obs);
+          else if (obs.type === 'FLAK') drawFlak(obs);
+        });
+        collectibles.forEach(col => {
+          if (col.type === 'ROOT_BEER') drawRootBeer(col);
+          else drawWoodstock(col);
+        });
+        drawSnoopy(player.x, player.y, player.rotation, player.scarfTimer, boostTimeRemaining > 0);
+        requestAnimationFrame(gameLoop);
+        return;
+      }
+
+      updateAndDrawBackground(dt);
+
+      if (gameState === 'PLAYING') {
+        if (boostTimeRemaining > 0) {
+          boostTimeRemaining -= dt;
+          const pct = Math.max(0, (boostTimeRemaining / BOOST_DURATION) * 100);
+          boostProgress.style.width = pct + '%';
+          if (boostTimeRemaining <= 0) {
+            boostBarContainer.classList.add('hidden');
+          }
+        }
+
+        const speedMultiplier = boostTimeRemaining > 0 ? 1.6 : 1.0;
+        distance += dt * 45 * speedMultiplier;
+        scoreDisplay.textContent = Math.floor(distance) + 'm';
+
+        obstacleTimer -= dt * speedMultiplier;
+        if (obstacleTimer <= 0) {
+          spawnObstacle();
+          obstacleTimer = 1.3 + Math.random() * 1.5;
+        }
+
+        collectibleTimer -= dt;
+        if (collectibleTimer <= 0) {
+          spawnCollectible();
+          collectibleTimer = 2.5 + Math.random() * 3.0;
+        }
+
+        player.update(dt);
+
+        player.smokeParticles.forEach(p => {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(240, 240, 240, ${p.alpha})`;
+          ctx.fill();
+        });
+
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+          const obs = obstacles[i];
+          obs.x -= obs.speed * speedMultiplier * dt;
+          if (obs.propellerAngle !== undefined) obs.propellerAngle += dt * 25;
+          if (obs.lightningTick !== undefined) obs.lightningTick += dt;
+
+          if (obs.type === 'ZEPPELIN') drawZeppelin(obs);
+          else if (obs.type === 'STORM_CLOUD') drawStormCloud(obs);
+          else if (obs.type === 'FLAK') drawFlak(obs);
+
+          const collision = checkCircleCollision(player.x, player.y, 20, obs.x, obs.y, obs.width * 0.4);
+          if (collision) {
+            if (boostTimeRemaining > 0) {
+              obstacles.splice(i, 1);
+              sound.playFlap();
+              continue;
+            } else {
+              triggerGameOver();
+              break;
+            }
+          }
+
+          if (obs.x < -120) {
+            obstacles.splice(i, 1);
+          }
+        }
+
+        for (let i = collectibles.length - 1; i >= 0; i--) {
+          const col = collectibles[i];
+          col.x -= col.speed * dt;
+          col.bobPhase += dt * 5;
+
+          if (col.type === 'ROOT_BEER') drawRootBeer(col);
+          else drawWoodstock(col);
+
+          if (checkCircleCollision(player.x, player.y, 24, col.x, col.y, 16)) {
+            if (col.type === 'ROOT_BEER') {
+              rootBeerCount++;
+              rootBeerCountDisplay.textContent = rootBeerCount;
+              boostTimeRemaining = BOOST_DURATION;
+              boostBarContainer.classList.remove('hidden');
+              boostProgress.style.width = '100%';
+              sound.playBeer();
+            } else {
+              distance += 150;
+              sound.playWoodstock();
+            }
+            collectibles.splice(i, 1);
+            continue;
+          }
+
+          if (col.x < -60) {
+            collectibles.splice(i, 1);
+          }
+        }
+      }
+
+      drawSnoopy(
+        player.x,
+        player.y,
+        player.rotation,
+        player.scarfTimer,
+        boostTimeRemaining > 0
+      );
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    function handleFlapInput(e) {
+      if (e) {
+        const interactiveIds = [
+          'soundToggleBtn', 'pauseToggleBtn', 'startBtn', 
+          'restartBtn', 'resumeBtn', 'pauseRestartBtn'
+        ];
+        if (e.target && interactiveIds.includes(e.target.id)) {
+          return;
+        }
+      }
+
+      sound.init();
+
+      if (gameState === 'PAUSED') {
+        return;
+      }
+
+      if (gameState === 'PLAYING') {
+        player.flap();
+      } else if (gameState === 'START') {
+        startGame();
+      }
+    }
+
+    function startGame() {
+      sound.init();
+      gameState = 'PLAYING';
+      distance = 0;
+      rootBeerCount = 0;
+      boostTimeRemaining = 0;
+      rootBeerCountDisplay.textContent = '0';
+      scoreDisplay.textContent = '0m';
+      if (pauseIcon) pauseIcon.textContent = '⏸️';
+      obstacles.length = 0;
+      collectibles.length = 0;
+      player.reset(logicalHeight);
+      startScreen.classList.add('hidden');
+      gameOverScreen.classList.add('hidden');
+      if (pauseScreen) pauseScreen.classList.add('hidden');
+      boostBarContainer.classList.add('hidden');
+      lastTime = performance.now();
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      handleFlapInput(e);
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'KeyP' || e.code === 'Escape') {
+        e.preventDefault();
+        togglePause();
+        return;
+      }
+
+      if (e.code === 'Space' || e.code === 'ArrowUp') {
+        e.preventDefault();
+        if (gameState === 'GAMEOVER') {
+          startGame();
+        } else if (gameState === 'PAUSED') {
+          resumeGame();
+        } else {
+          handleFlapInput(null);
+        }
+      }
+    });
+
+    if (pauseToggleBtn) {
+      pauseToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePause();
+      });
+    }
+
+    if (resumeBtn) {
+      resumeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        resumeGame();
+      });
+    }
+
+    if (pauseRestartBtn) {
+      pauseRestartBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        startGame();
+      });
+    }
+
+    if (startBtn) {
+      startBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        startGame();
+      });
+    }
+
+    if (restartBtn) {
+      restartBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        startGame();
+      });
+    }
+
+    if (soundToggleBtn) {
+      soundToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sound.init();
+        sound.enabled = !sound.enabled;
+        soundToggleBtn.textContent = sound.enabled ? '🔊' : '🔇';
+      });
+    }
+
+    window.onload = function() {
+      resizeCanvas();
+      player.reset(logicalHeight);
+      requestAnimationFrame(gameLoop);
+    };
+  </script>
+</body>
+</html>
